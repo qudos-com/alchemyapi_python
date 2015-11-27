@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#	Copyright 2013 AlchemyAPI
+#   Copyright 2013 AlchemyAPI
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -20,19 +20,9 @@ import requests
 import sys
 
 try:
-    from urllib.request import urlopen
-    from urllib.parse import urlparse
     from urllib.parse import urlencode
 except ImportError:
-    from urlparse import urlparse
-    from urllib2 import urlopen
     from urllib import urlencode
-
-try:
-    import json
-except ImportError:
-    # Older versions of Python (i.e. 2.4) require simplejson instead of json
-    import simplejson as json
 
 
 if __name__ == '__main__':
@@ -48,7 +38,6 @@ if __name__ == '__main__':
     none
     """
 
-    import sys
     if len(sys.argv) == 2 and sys.argv[1]:
         if len(sys.argv[1]) == 40:
             # write the key to the file
@@ -62,8 +51,9 @@ if __name__ == '__main__':
             print(
                 'The key appears to invalid. Please make sure to use the 40 character key assigned by AlchemyAPI')
 
+
 class APIKeyException(Exception):
-	pass
+    pass
 
 
 class AlchemyAPI:
@@ -140,48 +130,31 @@ class AlchemyAPI:
 
     s = requests.Session()
 
-    def __init__(self):
+    def __init__(self, apikey=None):
         """
         Initializes the SDK so it can send requests to AlchemyAPI for analysis.
         It loads the API key from api_key.txt and configures the endpoints.
         """
 
-        import sys
-        try:
-            # Open the key file and read the key
-            f = open("api_key.txt", "r")
-            key = f.read().strip()
-
-            if key == '':
-                # The key file should't be blank
-                print(
-                    'The api_key.txt file appears to be blank, please run: python alchemyapi.py YOUR_KEY_HERE')
-                print(
-                    'If you do not have an API Key from AlchemyAPI, please register for one at: http://www.alchemyapi.com/api/register.html')
-                sys.exit(0)
-            elif len(key) != 40:
-                # Keys should be exactly 40 characters long
-                print(
-                    'It appears that the key in api_key.txt is invalid. Please make sure the file only includes the API key, and it is the correct one.')
-                sys.exit(0)
-            else:
-                # setup the key
-                self.apikey = key
-
-            # Close file
-            f.close()
-        except IOError:
-            # The file doesn't exist, so show the message and create the file.
-            print(
-                'API Key not found! Please run: python alchemyapi.py YOUR_KEY_HERE')
-            print(
-                'If you do not have an API Key from AlchemyAPI, please register for one at: http://www.alchemyapi.com/api/register.html')
-
-            # create a blank key file
-            open('api_key.txt', 'a').close()
-            sys.exit(0)
-        except Exception as e:
-            print(e)
+        if not apikey:
+            try:
+                # Open the key file and read the key
+                with open("api_key.txt", "r"):
+                    apikey = f.read().strip()
+            except IOError:
+                # The file doesn't exist, so show the message and create the file.
+                raise APIKeyException(
+                    'The api_key.txt file could not be read. To create one, '
+                    'please run: python alchemyapi.py YOUR_KEY_HERE')
+        if not apikey:
+            raise APIKeyException(
+                'No apikey key found. If you want to use the api_key.txt file '
+                'to store the key, please run: python alchemyapi.py YOUR_KEY_HERE')
+        elif len(apikey) != 40:
+            raise APIKeyException(
+                'It appears that the api key is invalid. It should be exactly '
+                '40 characters in length')
+        self.apikey = apikey
 
     def entities(self, flavor, data, options={}):
         """
@@ -306,7 +279,7 @@ class AlchemyAPI:
         options -> various parameters that can be used to adjust how the API works, see below for more info on the available options.
 
         Available Options:
-        showSourceText	-> 0: disabled, 1: enabled
+        showSourceText  -> 0: disabled, 1: enabled
 
         OUTPUT:
         The response, already converted from JSON to a Python object.
